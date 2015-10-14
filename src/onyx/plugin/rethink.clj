@@ -1,9 +1,8 @@
 (ns onyx.plugin.rethink
   (:require
-   [rethinkdb.query :as r :refer [connect]]
-
    [onyx.peer.function :as function]
-   [onyx.peer.pipeline-extensions :as p-ext]))
+   [onyx.peer.pipeline-extensions :as p-ext]
+   [rethinkdb.query :as r :refer [connect]]))
 
 (defrecord RethinkWriteDocuments [db-name tbl-name]
   p-ext/Pipeline

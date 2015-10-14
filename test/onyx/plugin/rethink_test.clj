@@ -1,14 +1,11 @@
 (ns onyx.plugin.rethink-test
   (:require
-   [rethinkdb.query :as r :refer [connect]]
-
    [clojure.core.async :refer [chan >!! <!! close!]]
-
+   [clojure.test :refer :all]
    [onyx.plugin.rethink :as rethink]
    [onyx.plugin.core-async]
    [onyx.api]
-
-   [clojure.test :refer :all])
+   [rethinkdb.query :as r :refer [connect]])
   (:import [java.util UUID]))
 
 (def uuid #(UUID/randomUUID))
