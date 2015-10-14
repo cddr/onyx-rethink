@@ -12,7 +12,6 @@
 
   (write-batch [_ {:keys [onyx.core/results]}]
     (let [docs (map :message (mapcat :leaves (:tree results)))]
-      (println "inserting docs: " docs)
       (with-open [db (connect)]
         (-> (r/db db-name)
             (r/table tbl-name)
@@ -29,6 +28,3 @@
         db-name (:rethink/db task-map)
         tbl-name (:rethink/table task-map)]
     (->RethinkWriteDocuments db-name tbl-name)))
-
-;; (def write-documents-calls
-;;   {:lifecycle/before-task-start inject-write-dcuments})

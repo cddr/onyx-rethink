@@ -32,18 +32,13 @@
 (defonce dev-env (onyx.api/start-env env-config))
 (defonce peer-group (onyx.api/start-peer-group peer-config))
 
-(defn transform [segment]
-  (println "transforming: " segment)
-  segment)
-
 (def facts [{:id 1, :msg "foo"}
             {:id 2, :msg "bar"}
             {:id 3, :msg "baz"}
             :done])
 
 (def workflow
-  [[:in :transform]
-   [:transform :rethink]])
+  [[:in :rethink]])
 
 (defn catalog [db-name tbl-name]
   [{:onyx/name :in
@@ -54,12 +49,6 @@
     :onyx/max-peers 1
     :onyx/doc "Reads segments from a core.async channel"}
 
-   {:onyx/name :transform
-    :onyx/fn :onyx.plugin.rethink-test/transform
-    :onyx/type :function
-    :onyx/batch-size 1000
-    :onyx/doc "Transforms a segment to prepare for ReQL persistence"}
-
    {:onyx/name :rethink
     :onyx/plugin :onyx.plugin.rethink/write-documents
     :onyx/type :output
@@ -67,7 +56,7 @@
     :rethink/db db-name
     :rethink/table tbl-name
     :onyx/batch-size 1000
-    :onyx/doc "Writes segments from the :rows keys to the SQL database"}])
+    :onyx/doc "Writes segments from the :rows keys to the named RethinkDB table"}])
 
 (def in-chan (chan 1000))
 
@@ -75,7 +64,6 @@
   (>!! in-chan fact))
 
 (defn inject-in-ch [event lifecycle]
-  (println "Injecting input data")
   {:core.async/chan in-chan})
 
 (def in-calls
@@ -108,10 +96,7 @@
     (-> (r/db-drop db-name)
         (r/run db))))
 
-(def db-name (test-name 10))
-(def tbl-name (test-name 10))
-
-(defn gc-rethink []
+(defn destroy-all-dbs []
   (with-open [db (connect)]
     (let [dbs (r/run (r/db-list) db)]
       (doseq [d dbs]
@@ -130,11 +115,11 @@
                       :lifecycles lifecycles
                       :task-scheduler :onyx.task-scheduler/balanced})]
 
-      (println "Waiting for job to complete...")
       (onyx.api/await-job-completion peer-config (:job-id job))
 
-      (println "Checking data...")
-      (with-open [db (connect)]
-        (println (-> (r/db db-name)
-                     (r/table tbl-name)
-                     (r/run db)))))))
+      (is (= (set [{:id 1, :msg "foo"} {:id 2, :msg "bar"} {:id 3, :msg "baz"}])
+             (set
+              (with-open [db (connect)]
+                (-> (r/db db-name)
+                    (r/table tbl-name)
+                    (r/run db)))))))))
